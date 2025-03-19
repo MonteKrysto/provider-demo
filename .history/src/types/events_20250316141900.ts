@@ -1,0 +1,1 @@
+Object literal may only specify known properties, and 'OPEN_MODAL' does not exist in type 'TransitionsConfig<PracticeContext, { type: "EDIT_PATIENT"; data: Partial<Patient>; } | { type: "PRESCRIBE"; med: Medication; } | { type: "SAVE_DRAFT"; content: string; } | ... 5 more ... | { ...; }, ... 5 more ..., MetaObject>'.ts(2353)
