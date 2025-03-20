@@ -72,10 +72,10 @@ export const notesMachine = createMachine({
             },
           }),
         },
-        UPDATE_NOTE: {
+        UPDATE_NOTE_WITH_RESPONSE: {
           actions: assign({
             notes: ({ context, event }) => {
-              const updateEvent = event as Extract<PracticeEvent, { type: 'UPDATE_NOTE' }>;
+              const updateEvent = event as Extract<PracticeEvent, { type: 'UPDATE_NOTE_WITH_RESPONSE' }>;
               const updatedNote = updateEvent.note;
               const patientId = updatedNote.patientId;
               console.log('Updating note in notesMachine:', updatedNote);

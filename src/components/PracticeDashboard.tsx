@@ -1,5 +1,4 @@
-import { useActor } from '@xstate/react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Button,
@@ -20,73 +19,17 @@ import {
   Text,
   VStack,
 } from '@chakra-ui/react';
-import { practiceMachine } from '../actors/practice';
 import { PatientList } from './PatientList';
 import { NotesEditor } from './NotesEditor';
 import { BillingStatus } from './BillingStatus';
 import { Calendar } from './Calendar';
-import { Patient } from '../types/patient';
+import { usePractice, usePatient, useBilling, useAppointments } from '../contexts';
 
 export function PracticeDashboard() {
-  const [state, send] = useActor(practiceMachine);
-  const patientState = state.context.patientRef.getSnapshot();
-
-  // Use local state to store the active patient, initially null
-  const [activePatient, setActivePatient] = useState<Patient | null>(null);
-
-  // Use local state to store the notes state
-  const [notes, setNotes] = useState(state.context.notesRef.getSnapshot().context.notes);
-
-  // Use local state to store the invoices state
-  const [invoices, setInvoices] = useState(state.context.billingRef.getSnapshot().context.invoices);
-
-  // Use local state to store the appointments state
-  const [appointments, setAppointments] = useState(state.context.appointmentsRef.getSnapshot().context.appointments);
-
-  // Use local state to store the selected invoice ID
-  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
-
-  // Use local state to store the selected appointment ID
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
-
-  // Subscribe to notesMachine state changes
-  useEffect(() => {
-    const subscription = state.context.notesRef.subscribe((newState) => {
-      console.log('Notes state updated:', newState.context.notes);
-      setNotes(newState.context.notes);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [state.context.notesRef]);
-
-  // Subscribe to billingMachine state changes
-  useEffect(() => {
-    const subscription = state.context.billingRef.subscribe((newState) => {
-      console.log('Invoices state updated:', newState.context.invoices);
-      setInvoices(newState.context.invoices);
-      // Clear selection if the selected invoice is no longer in the list
-      if (selectedInvoiceId && !newState.context.invoices.some((invoice) => invoice.id === selectedInvoiceId)) {
-        setSelectedInvoiceId(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [state.context.billingRef, selectedInvoiceId]);
-
-  // Subscribe to appointmentsMachine state changes
-  useEffect(() => {
-    const subscription = state.context.appointmentsRef.subscribe((newState) => {
-      console.log('Appointments state updated:', newState.context.appointments);
-      setAppointments(newState.context.appointments);
-      // Clear selection if the selected appointment is no longer in the list
-      if (selectedAppointmentId && !newState.context.appointments.some((appt) => appt.id === selectedAppointmentId)) {
-        console.log('Clearing selected appointment ID because it was not found in the updated list');
-        setSelectedAppointmentId(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [state.context.appointmentsRef, selectedAppointmentId]);
+  const { isLoading, error, modal, openModal, closeModal, activePatient, setActivePatient } = usePractice();
+  const { patients, createPatient } = usePatient(); // Add createPatient from PatientContext
+  const { invoices, selectedInvoiceId, generateInvoice, processPayment } = useBilling();
+  const { appointments, selectedAppointmentId, scheduleAppointment, rescheduleAppointment, cancelAppointment } = useAppointments();
 
   // Form state for adding a new patient
   const [newPatientName, setNewPatientName] = useState('');
@@ -101,31 +44,12 @@ export function PracticeDashboard() {
         diagnosis: newPatientDiagnosis.split(',').map((d) => d.trim()).filter(Boolean),
         medications: [],
       };
-      send({ type: 'CREATE_PATIENT', patient: newPatient });
+      createPatient(newPatient); // Send CREATE_PATIENT event to persist the new patient
+      setActivePatient(newPatient);
       setNewPatientName('');
       setNewPatientDiagnosis('');
       setIsAddPatientModalOpen(false);
     }
-  };
-
-  // Handle invoice selection
-  const handleSelectInvoice = (invoiceId: string) => {
-    console.log('Selected invoice ID:', invoiceId);
-    setSelectedInvoiceId(invoiceId);
-  };
-
-  // Handle payment processing
-  const handleProcessPayment = () => {
-    if (selectedInvoiceId) {
-      send({ type: 'PROCESS_PAYMENT', invoiceId: selectedInvoiceId });
-      setSelectedInvoiceId(null); // Clear selection after processing
-    }
-  };
-
-  // Handle appointment selection
-  const handleSelectAppointment = (appointmentId: string) => {
-    console.log('Selected appointment ID:', appointmentId);
-    setSelectedAppointmentId(appointmentId);
   };
 
   // Check if the selected invoice is pending
@@ -136,7 +60,7 @@ export function PracticeDashboard() {
   const selectedAppointment = appointments.find((appt) => appt.id === selectedAppointmentId);
   const canModifyAppointment = selectedAppointmentId && selectedAppointment?.status === 'scheduled';
 
-  if (state.context.isLoading) {
+  if (isLoading) {
     return (
       <Flex align="center" justify="center" h="100vh" bg="gray.50">
         <Text fontSize="xl" color="gray.600">Loading...</Text>
@@ -144,7 +68,7 @@ export function PracticeDashboard() {
     );
   }
 
-  if (state.context.error) {
+  if (error) {
     return (
       <Box p={4} minH="100vh" bg="gray.50">
         <Card maxW="lg" mx="auto" shadow="md" borderRadius="md">
@@ -152,7 +76,7 @@ export function PracticeDashboard() {
             <Heading size="md" color="red.700">Error</Heading>
           </CardHeader>
           <CardBody>
-            <Text color="red.600" mb={4}>{state.context.error}</Text>
+            <Text color="red.600" mb={4}>{error}</Text>
             <Button onClick={() => window.location.reload()} colorScheme="red" w={{ base: 'full', sm: 'auto' }}>
               Retry
             </Button>
@@ -177,15 +101,7 @@ export function PracticeDashboard() {
             {/* Patient List Section */}
             <Box mb={8} bg="gray.50" p={4} borderRadius="md" shadow="sm">
               <Heading size="md" mb={4} color="gray.700">Patients</Heading>
-              <PatientList
-                patients={patientState.context.patients}
-                onSelect={(patient: Patient) => {
-                  setActivePatient(patient);
-                  send({ type: 'EDIT_PATIENT', data: patient });
-                  setSelectedInvoiceId(null); // Clear invoice selection when changing patient
-                  setSelectedAppointmentId(null); // Clear appointment selection when changing patient
-                }}
-              />
+              <PatientList onSelect={setActivePatient} />
               <Button
                 mt={4}
                 w={{ base: 'full', sm: 'auto' }}
@@ -246,15 +162,7 @@ export function PracticeDashboard() {
             <Box mb={8} bg="gray.50" p={4} borderRadius="md" shadow="sm" opacity={activePatient ? 1 : 0.5} pointerEvents={activePatient ? 'auto' : 'none'}>
               <Heading size="md" mb={4} color="gray.700">Notes</Heading>
               {activePatient ? (
-                <NotesEditor
-                  note={state.context.notesRef.getSnapshot().context.currentNote}
-                  notes={notes}
-                  onSave={(content) => send({ type: 'SAVE_DRAFT', content, activePatient })}
-                  onLock={() => send({ type: 'LOCK_NOTE', activePatient })}
-                  onLockExisting={(noteId) => send({ type: 'LOCK_EXISTING_NOTE', noteId, activePatient })}
-                  onUpdate={(noteId, content) => send({ type: 'UPDATE_NOTE', noteId, content, activePatient })}
-                  activePatient={activePatient}
-                />
+                <NotesEditor activePatient={activePatient} />
               ) : (
                 <Text color="gray.500">Please select a patient to view or add notes.</Text>
               )}
@@ -265,23 +173,17 @@ export function PracticeDashboard() {
               <Heading size="md" mb={4} color="gray.700">Billing Status</Heading>
               {activePatient ? (
                 <>
-                  <BillingStatus
-                    invoices={invoices}
-                    activePatient={activePatient}
-                    patients={patientState.context.patients}
-                    selectedInvoiceId={selectedInvoiceId}
-                    onSelectInvoice={handleSelectInvoice}
-                  />
+                  <BillingStatus patients={patients} activePatient={activePatient} />
                   <Flex gap={3} mt={4} direction={{ base: 'column', sm: 'row' }}>
                     <Button
-                      onClick={() => send({ type: 'GENERATE_INVOICE', patientId: activePatient.id, amount: 150 })}
+                      onClick={() => activePatient && generateInvoice(activePatient.id, 150)}
                       colorScheme="blue"
                       w={{ base: 'full', sm: 'auto' }}
                     >
                       Generate Invoice
                     </Button>
                     <Button
-                      onClick={handleProcessPayment}
+                      onClick={() => selectedInvoiceId && processPayment(selectedInvoiceId)}
                       isDisabled={!canProcessPayment}
                       colorScheme="blue"
                       w={{ base: 'full', sm: 'auto' }}
@@ -300,23 +202,16 @@ export function PracticeDashboard() {
               <Heading size="md" mb={4} color="gray.700">Appointments</Heading>
               {activePatient ? (
                 <>
-                  <Calendar
-                    appointments={appointments}
-                    activePatient={activePatient}
-                    selectedAppointmentId={selectedAppointmentId}
-                    onSelectAppointment={handleSelectAppointment}
-                  />
+                  <Calendar activePatient={activePatient} />
                   <Flex gap={3} mt={4} direction={{ base: 'column', sm: 'row' }}>
                     <Button
                       onClick={() =>
-                        send({
-                          type: 'SCHEDULE',
-                          appointment: {
-                            patientId: activePatient.id,
-                            time: '2025-03-20T10:00:00Z',
-                            id: crypto.randomUUID(),
-                            status: 'scheduled',
-                          },
+                        activePatient &&
+                        scheduleAppointment({
+                          patientId: activePatient.id,
+                          time: '2025-03-20T10:00:00Z',
+                          id: crypto.randomUUID(),
+                          status: 'scheduled',
                         })
                       }
                       colorScheme="blue"
@@ -325,16 +220,7 @@ export function PracticeDashboard() {
                       Schedule Appointment
                     </Button>
                     <Button
-                      onClick={() =>
-                        selectedAppointmentId &&
-                        send({
-                          type: 'RESCHEDULE',
-                          appointment: {
-                            id: selectedAppointmentId,
-                            time: '2025-03-20T11:00:00Z',
-                          },
-                        })
-                      }
+                      onClick={() => selectedAppointmentId && rescheduleAppointment(selectedAppointmentId, '2025-03-20T11:00:00Z')}
                       isDisabled={!canModifyAppointment}
                       colorScheme="blue"
                       w={{ base: 'full', sm: 'auto' }}
@@ -342,13 +228,7 @@ export function PracticeDashboard() {
                       Reschedule Appointment
                     </Button>
                     <Button
-                      onClick={() =>
-                        selectedAppointmentId &&
-                        send({
-                          type: 'CANCEL',
-                          appointment: { id: selectedAppointmentId },
-                        })
-                      }
+                      onClick={() => selectedAppointmentId && cancelAppointment(selectedAppointmentId)}
                       isDisabled={!canModifyAppointment}
                       colorScheme="blue"
                       w={{ base: 'full', sm: 'auto' }}
@@ -363,8 +243,8 @@ export function PracticeDashboard() {
             </Box>
 
             <Button
-              onClick={() => send({ type: 'OPEN_MODAL', content: 'patientDetails' })}
-              isDisabled={!activePatient || !patientState.matches('idle')}
+              onClick={() => openModal('patientDetails')}
+              isDisabled={!activePatient}
               colorScheme="blue"
               w="full"
               mt={4}
@@ -375,7 +255,7 @@ export function PracticeDashboard() {
         </Card>
       </Box>
 
-      <Modal isOpen={state.context.modal.isOpen} onClose={() => send({ type: 'CLOSE_MODAL' })}>
+      <Modal isOpen={modal.isOpen} onClose={closeModal}>
         <ModalOverlay />
         <ModalContent maxW="md">
           <ModalHeader color="gray.800">Patient Details</ModalHeader>
@@ -388,7 +268,7 @@ export function PracticeDashboard() {
             </Text>
           </ModalBody>
           <ModalFooter>
-            <Button variant="outline" onClick={() => send({ type: 'CLOSE_MODAL' })} colorScheme="gray">
+            <Button variant="outline" onClick={closeModal} colorScheme="gray">
               Close
             </Button>
           </ModalFooter>

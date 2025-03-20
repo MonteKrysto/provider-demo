@@ -1,17 +1,19 @@
 import { Box, Table, Thead, Tbody, Tr, Th, Td, Text } from '@chakra-ui/react';
-import { Appointment } from '../types/appointments';
 import { Patient } from '../types/patient';
+import { useAppointments } from '../contexts';
 
 interface CalendarProps {
-  appointments: Appointment[];
-  activePatient: Patient | null;
-  selectedAppointmentId: string | null;
-  onSelectAppointment: (appointmentId: string) => void;
+  activePatient: Patient;
 }
 
-export function Calendar({ appointments, activePatient, selectedAppointmentId, onSelectAppointment }: CalendarProps) {
+export function Calendar({ activePatient }: CalendarProps) {
+  const { appointments, selectedAppointmentId, setSelectedAppointmentId } = useAppointments();
+
   // Filter appointments for the selected patient
   const patientAppointments = activePatient ? appointments.filter((appt) => appt.patientId === activePatient.id) : [];
+
+  console.log('Calendar appointments:', appointments);
+  console.log('Calendar patientAppointments:', patientAppointments);
 
   return (
     <Box overflowX="auto">
@@ -27,7 +29,7 @@ export function Calendar({ appointments, activePatient, selectedAppointmentId, o
             patientAppointments.map((appt) => (
               <Tr
                 key={appt.id}
-                onClick={() => onSelectAppointment(appt.id)}
+                onClick={() => setSelectedAppointmentId(appt.id)}
                 bg={selectedAppointmentId === appt.id ? 'blue.50' : 'white'}
                 cursor="pointer"
                 _hover={{ bg: 'gray.50' }}

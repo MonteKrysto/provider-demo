@@ -1,16 +1,15 @@
 import { Box, Table, Thead, Tbody, Tr, Th, Td, Text } from '@chakra-ui/react';
-import { Invoice } from '../types/billing';
-import { Patient } from '../types/patient';
+import { Patient } from '../types';
+import { useBilling } from '../contexts';
 
 interface BillingStatusProps {
-  invoices: Invoice[];
-  activePatient: Patient | null;
+  activePatient: Patient;
   patients: Patient[];
-  selectedInvoiceId: string | null;
-  onSelectInvoice: (invoiceId: string) => void;
 }
 
-export function BillingStatus({ invoices, activePatient, patients, selectedInvoiceId, onSelectInvoice }: BillingStatusProps) {
+export function BillingStatus({ activePatient, patients }: BillingStatusProps) {
+  const { invoices, selectedInvoiceId, setSelectedInvoiceId } = useBilling();
+
   // Filter invoices for the selected patient
   const patientInvoices = activePatient ? invoices.filter((invoice) => invoice.patientId === activePatient.id) : [];
 
@@ -19,6 +18,14 @@ export function BillingStatus({ invoices, activePatient, patients, selectedInvoi
     const patient = patients.find((p) => p.id === patientId);
     return patient ? patient.name : 'Unknown Patient';
   };
+
+  // Handle row click to select an invoice
+  const handleRowClick = (invoiceId: string) => {
+    setSelectedInvoiceId(invoiceId);
+  };
+
+  console.log('BillingStatus invoices:', invoices);
+  console.log('BillingStatus patientInvoices:', patientInvoices);
 
   return (
     <Box overflowX="auto">
@@ -36,7 +43,7 @@ export function BillingStatus({ invoices, activePatient, patients, selectedInvoi
             patientInvoices.map((invoice) => (
               <Tr
                 key={invoice.id}
-                onClick={() => onSelectInvoice(invoice.id)}
+                onClick={() => handleRowClick(invoice.id)}
                 bg={selectedInvoiceId === invoice.id ? 'blue.50' : 'white'}
                 cursor="pointer"
                 _hover={{ bg: 'gray.50' }}

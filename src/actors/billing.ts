@@ -1,6 +1,6 @@
 import { createMachine, assign } from 'xstate';
 import { Invoice } from '../types/billing';
-import { PracticeEvent } from '../types/events';
+import { PracticeEvent } from '../types';
 
 interface BillingContext {
   invoices: Invoice[];
