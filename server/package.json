@@ -3,10 +3,18 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "migrate": "drizzle-kit generate --config=drizzle.config.js && drizzle-kit push --config=drizzle.config.js",
+    "seed": "node seed.js"
   },
   "dependencies": {
+    "cors": "^2.8.5",
+    "drizzle-orm": "^0.40.1",
     "express": "^4.21.2",
-    "cors": "^2.8.5"
+    "pg": "^8.14.1",
+    "uuidv4": "^6.2.13"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.30.5"
   }
 }

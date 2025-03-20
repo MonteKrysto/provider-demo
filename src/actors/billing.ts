@@ -1,230 +1,9 @@
-// import { createMachine, assign, fromPromise } from 'xstate';
-// import { Invoice } from '../types/billing';
-// import { PracticeEvent } from '../types/events';
-
-// interface BillingContext {
-//   invoices: Invoice[];
-// }
-
-// interface PaymentInput {
-//   invoiceId: string;
-// }
-
-// interface PaymentResult {
-//   invoiceId: string;
-// }
-
-// export const billingMachine = createMachine({
-//   id: 'billing',
-//   initial: 'idle',
-//   context: {
-//     invoices: [],
-//   } satisfies BillingContext,
-//   types: {} as { context: BillingContext; events: PracticeEvent },
-//   states: {
-//     idle: {
-//       on: {
-//         GENERATE_INVOICE: {
-//           target: 'generating',
-//         },
-//         PROCESS_PAYMENT: {
-//           target: 'processing',
-//         },
-//       },
-//     },
-//     generating: {
-//       entry: assign({
-//         invoices: ({ context, event }) => {
-//           const generateEvent = event as Extract<PracticeEvent, { type: 'GENERATE_INVOICE' }>;
-//           const newInvoice: Invoice = {
-//             id: crypto.randomUUID(),
-//             patientId: generateEvent.patientId,
-//             amount: generateEvent.amount || 100.0,
-//             status: 'pending',
-//           };
-//           return [...context.invoices, newInvoice];
-//         },
-//       }),
-//       always: 'idle',
-//     },
-//     processing: {
-//       invoke: {
-//         src: fromPromise(
-//           async ({ input }: { input: PaymentInput }): Promise<PaymentResult> => {
-//             return new Promise((resolve, reject) => {
-//               setTimeout(() => {
-//                 const result: PaymentResult = { invoiceId: input.invoiceId };
-//                 if (Math.random() > 0.2) {
-//                   resolve(result);
-//                 } else {
-//                   reject(result);
-//                 }
-//               }, 1000);
-//             });
-//           }
-//         ),
-//         input: (_context: BillingContext, event: Extract<PracticeEvent, { type: 'PROCESS_PAYMENT' }>) => ({
-//           invoiceId: event.invoiceId,
-//         }),
-//         onDone: {
-//           target: 'idle',
-//           actions: assign({
-//             invoices: ({ context, event }) => {
-//               const paymentResult = (event as unknown as { data: PaymentResult }).data;
-//               return context.invoices.map((inv) =>
-//                 inv.id === paymentResult.invoiceId ? { ...inv, status: 'paid' as const } : inv
-//               );
-//             },
-//           }),
-//         },
-//         onError: {
-//           target: 'disputed',
-//           actions: assign({
-//             invoices: ({ context, event }) => {
-//               const paymentResult = (event as unknown as { data: PaymentResult }).data;
-//               return context.invoices.map((inv) =>
-//                 inv.id === paymentResult.invoiceId ? { ...inv, status: 'disputed' as const } : inv
-//               );
-//             },
-//           }),
-//         },
-//       },
-//     },
-//     disputed: {
-//       on: {
-//         PROCESS_PAYMENT: {
-//           target: 'processing',
-//         },
-//       },
-//     },
-//   },
-// });
-
-
-
-
-// import { createMachine, assign, fromPromise } from 'xstate';
-// import { Invoice } from '../types/billing';
-// import { PracticeEvent } from '../types/events';
-
-// interface BillingContext {
-//   invoices: Invoice[];
-// }
-
-// interface PaymentInput {
-//   invoiceId: string;
-// }
-
-// interface PaymentResult {
-//   invoiceId: string;
-// }
-
-// export const billingMachine = createMachine({
-//   id: 'billing',
-//   initial: 'idle',
-//   context: {
-//     invoices: [],
-//   } satisfies BillingContext,
-//   types: {} as { context: BillingContext; events: PracticeEvent },
-//   states: {
-//     idle: {
-//       on: {
-//         GENERATE_INVOICE: {
-//           target: 'generating',
-//         },
-//         PROCESS_PAYMENT: {
-//           target: 'processing',
-//         },
-//         INITIALIZE: {
-//           actions: assign({
-//             invoices: (_, event) => (event as any).data || [],
-//           }),
-//         },
-//       },
-//     },
-//     generating: {
-//       entry: assign({
-//         invoices: ({ context, event }) => {
-//           const generateEvent = event as Extract<PracticeEvent, { type: 'GENERATE_INVOICE' }>;
-//           const newInvoice: Invoice = {
-//             id: crypto.randomUUID(),
-//             patientId: generateEvent.patientId,
-//             amount: generateEvent.amount || 100.0,
-//             status: 'pending',
-//           };
-//           return [...context.invoices, newInvoice];
-//         },
-//       }),
-//       always: 'idle',
-//     },
-//     processing: {
-//       invoke: {
-//         src: fromPromise(
-//           async ({ input }: { input: PaymentInput }): Promise<PaymentResult> => {
-//             return new Promise((resolve, reject) => {
-//               setTimeout(() => {
-//                 const result: PaymentResult = { invoiceId: input.invoiceId };
-//                 if (Math.random() > 0.2) {
-//                   resolve(result);
-//                 } else {
-//                   reject(result);
-//                 }
-//               }, 1000);
-//             });
-//           }
-//         ),
-//         input: (_context: BillingContext, event: Extract<PracticeEvent, { type: 'PROCESS_PAYMENT' }>) => ({
-//           invoiceId: event.invoiceId,
-//         }),
-//         onDone: {
-//           target: 'idle',
-//           actions: assign({
-//             invoices: ({ context, event }) => {
-//               const { data } = event as unknown as { data: PaymentResult };
-//               return context.invoices.map((inv) =>
-//                 inv.id === data.invoiceId ? { ...inv, status: 'paid' as const } : inv
-//               );
-//             },
-//           }),
-//         },
-//         onError: {
-//           target: 'disputed',
-//           actions: assign({
-//             invoices: ({ context, event }) => {
-//               const { data } = event as unknown as { data: PaymentResult };
-//               return context.invoices.map((inv) =>
-//                 inv.id === data.invoiceId ? { ...inv, status: 'disputed' as const } : inv
-//               );
-//             },
-//           }),
-//         },
-//       },
-//     },
-//     disputed: {
-//       on: {
-//         PROCESS_PAYMENT: {
-//           target: 'processing',
-//         },
-//       },
-//     },
-//   },
-// });
-
-
-import { createMachine, assign, fromPromise } from 'xstate';
+import { createMachine, assign } from 'xstate';
 import { Invoice } from '../types/billing';
 import { PracticeEvent } from '../types/events';
 
 interface BillingContext {
   invoices: Invoice[];
-}
-
-interface PaymentInput {
-  invoiceId: string;
-}
-
-interface PaymentResult {
-  invoiceId: string;
 }
 
 export const billingMachine = createMachine({
@@ -238,86 +17,45 @@ export const billingMachine = createMachine({
     idle: {
       on: {
         GENERATE_INVOICE: {
-          target: 'generating',
+          actions: [
+            // No immediate action needed; handled by practiceMachine
+          ],
         },
         PROCESS_PAYMENT: {
-          target: 'processing',
+          actions: [
+            // No immediate action needed; handled by practiceMachine
+          ],
+        },
+        ADD_INVOICE: {
+          actions: assign({
+            invoices: ({ context, event }) => {
+              const addEvent = event as Extract<PracticeEvent, { type: 'ADD_INVOICE' }>;
+              console.log('Adding invoice to billingMachine:', addEvent.invoice);
+              return [...context.invoices, addEvent.invoice];
+            },
+          }),
+        },
+        UPDATE_INVOICE: {
+          actions: assign({
+            invoices: ({ context, event }) => {
+              const updateEvent = event as Extract<PracticeEvent, { type: 'UPDATE_INVOICE' }>;
+              console.log('Updating invoice in billingMachine:', updateEvent);
+              return context.invoices.map((invoice) =>
+                invoice.id === updateEvent.invoiceId ? { ...invoice, status: updateEvent.status } : invoice
+              );
+            },
+          }),
         },
         INITIALIZE: {
           actions: assign({
             invoices: ({ context, event }) => {
               console.log('INITIALIZE event in billingMachine:', event);
-              if ('output' in event && event.output) {
-                return event.output as Invoice[] || [];
+              if ('data' in event && event.data) {
+                return event.data as Invoice[] || [];
               }
-              return context.invoices;
+              return context.invoices; // Fallback to current state
             },
           }),
-        },
-      },
-    },
-    generating: {
-      entry: assign({
-        invoices: ({ context, event }) => {
-          const generateEvent = event as Extract<PracticeEvent, { type: 'GENERATE_INVOICE' }>;
-          const newInvoice: Invoice = {
-            id: crypto.randomUUID(),
-            patientId: generateEvent.patientId,
-            amount: generateEvent.amount || 100.0,
-            status: 'pending',
-          };
-          return [...context.invoices, newInvoice];
-        },
-      }),
-      always: 'idle',
-    },
-    processing: {
-      invoke: {
-        src: fromPromise(
-          async ({ input }: { input: PaymentInput }) => {
-            return new Promise((resolve, reject) => {
-              setTimeout(() => {
-                const result: PaymentResult = { invoiceId: input.invoiceId };
-                if (Math.random() > 0.2) {
-                  resolve(result);
-                } else {
-                  reject(result);
-                }
-              }, 1000);
-            });
-          }
-        ),
-        input: (_context: BillingContext, event: Extract<PracticeEvent, { type: 'PROCESS_PAYMENT' }>) => ({
-          invoiceId: event.invoiceId,
-        }),
-        onDone: {
-          target: 'idle',
-          actions: assign({
-            invoices: ({ context, event }) => {
-              const { output } = event as { output: PaymentResult }; // Use output for consistency
-              return context.invoices.map((inv) =>
-                inv.id === output.invoiceId ? { ...inv, status: 'paid' as const } : inv
-              );
-            },
-          }),
-        },
-        onError: {
-          target: 'disputed',
-          actions: assign({
-            invoices: ({ context, event }) => {
-              const { output } = event as unknown as { output: PaymentResult }; // Two-step assertion
-              return context.invoices.map((inv) =>
-                inv.id === output.invoiceId ? { ...inv, status: 'disputed' as const } : inv
-              );
-            },
-          }),
-        },
-      },
-    },
-    disputed: {
-      on: {
-        PROCESS_PAYMENT: {
-          target: 'processing',
         },
       },
     },
