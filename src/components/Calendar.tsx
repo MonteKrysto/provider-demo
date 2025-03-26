@@ -1,54 +1,77 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
-import { Appointment } from '../types/appointments';
+import { Box, Table, Thead, Tbody, Tr, Th, Td, Text } from '@chakra-ui/react';
+import { Patient } from '../types/patient';
+import { useAppointments } from '../contexts';
 
 interface CalendarProps {
-  appointments: Appointment[];
+  activePatient: Patient;
 }
 
-export function Calendar({ appointments }: CalendarProps) {
+export function Calendar({ activePatient }: CalendarProps) {
+  const { appointments, selectedAppointmentId, setSelectedAppointmentId } = useAppointments();
+
+  // Filter appointments for the selected patient
+  const patientAppointments = activePatient ? appointments.filter((appt) => appt.patientId === activePatient.id) : [];
+
   console.log('Calendar appointments:', appointments);
+  console.log('Calendar patientAppointments:', patientAppointments);
 
   return (
-    <div className="overflow-x-auto mt-4">
-      <h2 className="text-lg font-semibold mb-2">Appointments</h2>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[150px]">Patient ID</TableHead>
-            <TableHead>Date/Time</TableHead>
-            <TableHead>Status</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {appointments.length > 0 ? (
-            appointments.map((appointment) => (
-              <TableRow key={appointment.id}>
-                <TableCell>{appointment.patientId}</TableCell>
-                <TableCell>{new Date(appointment.time).toLocaleString()}</TableCell>
-                <TableCell>
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      appointment.status === 'scheduled'
-                        ? 'bg-blue-100 text-blue-800'
-                        : appointment.status === 'completed'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}
+    <Box overflowX="auto">
+      <Table variant="simple">
+        <Thead>
+          <Tr>
+            <Th>Time</Th>
+            <Th>Status</Th>
+          </Tr>
+        </Thead>
+        <Tbody>
+          {patientAppointments.length > 0 ? (
+            patientAppointments.map((appt) => (
+              <Tr
+                key={appt.id}
+                onClick={() => setSelectedAppointmentId(appt.id)}
+                bg={selectedAppointmentId === appt.id ? 'blue.50' : 'white'}
+                cursor="pointer"
+                _hover={{ bg: 'gray.50' }}
+              >
+                <Td>{new Date(appt.time).toLocaleString()}</Td>
+                <Td>
+                  <Text
+                    as="span"
+                    px={2}
+                    py={1}
+                    borderRadius="full"
+                    fontSize="xs"
+                    fontWeight="medium"
+                    bg={
+                      appt.status === 'scheduled'
+                        ? 'blue.100'
+                        : appt.status === 'canceled'
+                        ? 'red.100'
+                        : 'gray.100'
+                    }
+                    color={
+                      appt.status === 'scheduled'
+                        ? 'blue.800'
+                        : appt.status === 'canceled'
+                        ? 'red.800'
+                        : 'gray.800'
+                    }
                   >
-                    {appointment.status}
-                  </span>
-                </TableCell>
-              </TableRow>
+                    {appt.status}
+                  </Text>
+                </Td>
+              </Tr>
             ))
           ) : (
-            <TableRow>
-              <TableCell colSpan={3} className="text-center text-gray-500">
-                No appointments scheduled.
-              </TableCell>
-            </TableRow>
+            <Tr>
+              <Td colSpan={2} textAlign="center" color="gray.500">
+                No appointments found.
+              </Td>
+            </Tr>
           )}
-        </TableBody>
+        </Tbody>
       </Table>
-    </div>
+    </Box>
   );
 }
