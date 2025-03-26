@@ -44,17 +44,32 @@ app.post('/api/update', async (req, res) => {
   try {
     switch (type) {
       case 'CREATE_PATIENT':
+        console.log('CREATE_PATIENT payload.patient:', payload.patient);
         const newPatient = {
           id: payload.patient.id,
           name: payload.patient.name,
-          diagnosis: JSON.stringify(payload.patient.diagnosis),
-          medications: JSON.stringify(payload.patient.medications),
+          diagnosis: Array.isArray(payload.patient.diagnosis) ? payload.patient.diagnosis : payload.patient.diagnosis.split(',').map((d) => d.trim()),
+          medications: Array.isArray(payload.patient.medications) ? payload.patient.medications : [],
         };
         await db.insert(patients).values(newPatient);
-        res.json({ success: true, patient: newPatient });
+        // Debug: Retrieve the patient from the database to verify the data
+        const insertedPatient = await db.select().from(patients).where(eq(patients.id, newPatient.id)).limit(1);
+        console.log('CREATE_PATIENT insertedPatient from DB:', insertedPatient[0]);
+        res.json({
+          success: true,
+          patient: {
+            ...newPatient,
+            diagnosis: Array.isArray(newPatient.diagnosis) ? newPatient.diagnosis : JSON.parse(newPatient.diagnosis),
+            medications: Array.isArray(newPatient.medications) ? newPatient.medications : JSON.parse(newPatient.medications),
+          },
+        });
         break;
 
       case 'SAVE_DRAFT':
+        if (!payload.content || payload.content.trim() === '') {
+          res.status(400).json({ error: 'Note content cannot be empty' });
+          return;
+        }
         const newNote = {
           id: Date.now().toString(),
           patientId: payload.activePatient?.id || 'p1',
@@ -68,6 +83,10 @@ app.post('/api/update', async (req, res) => {
         break;
 
       case 'LOCK_NOTE':
+        if (!payload.content || payload.content.trim() === '') {
+          res.status(400).json({ error: 'Note content cannot be empty' });
+          return;
+        }
         const lockedNote = {
           id: Date.now().toString(),
           patientId: payload.activePatient?.id || 'p1',

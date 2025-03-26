@@ -33,6 +33,7 @@ export function AppointmentsProvider({ children }: { children: ReactNode }) {
   }, [state.context.appointmentsRef, selectedAppointmentId]);
 
   const scheduleAppointment = (appointment: Appointment) => {
+    console.log('Sending SCHEDULE event with appointment:', appointment); // Debug log
     send({ type: 'SCHEDULE', appointment });
   };
 

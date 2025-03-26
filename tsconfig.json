@@ -34,6 +34,13 @@
       "~/*": ["./src/*"] // Maps ~/components/ui to src/components/ui
     }
   },
-  "include": ["src"],
+  "include": [
+    "src",
+    "tests/Appointments.test.tsx",
+    "tests/Billing.test.tsx",
+    "tests/Modal.test.tsx",
+    "tests/NotesEditor.test.tsx",
+    "tests/PracticeDashboard.test.tsx"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

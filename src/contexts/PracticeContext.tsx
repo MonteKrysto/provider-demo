@@ -1,25 +1,32 @@
-import { createContext, useContext, useState,ReactNode } from 'react';
+import { createContext, useContext, ReactNode } from 'react';
 import { useActor } from '@xstate/react';
 import { practiceMachine } from '../actors/practice';
-import { Patient } from '../types/patient';
+import { Patient } from 'types';
 
 interface PracticeContextType {
-  state: ReturnType<typeof useActor<typeof practiceMachine>>[0];
-  send: ReturnType<typeof useActor<typeof practiceMachine>>[1];
+  state: any;
+  send: (event: any) => void;
   isLoading: boolean;
   error?: string;
   modal: { isOpen: boolean; content: 'patientDetails' | null };
   openModal: (content: 'patientDetails') => void;
   closeModal: () => void;
   activePatient: Patient | null;
-  setActivePatient: (patient: Patient | null) => void;
+  setActivePatient: (patient: Patient) => void;
 }
 
 const PracticeContext = createContext<PracticeContextType | undefined>(undefined);
 
 export function PracticeProvider({ children }: { children: ReactNode }) {
   const [state, send] = useActor(practiceMachine);
-  const [activePatient, setActivePatient] = useState<Patient | null>(null);
+
+  const isLoading = state.context.isLoading;
+  const error = state.context.error;
+  const modal = state.context.modal;
+  const activePatient = state.context.activePatient;
+
+  // Debug log for modal state changes
+  console.log('PracticeContext modal state:', modal);
 
   const openModal = (content: 'patientDetails') => {
     send({ type: 'OPEN_MODAL', content });
@@ -29,12 +36,16 @@ export function PracticeProvider({ children }: { children: ReactNode }) {
     send({ type: 'CLOSE_MODAL' });
   };
 
+  const setActivePatient = (patient: Patient) => {
+    send({ type: 'EDIT_PATIENT', data: patient });
+  };
+
   const value: PracticeContextType = {
     state,
     send,
-    isLoading: state.context.isLoading,
-    error: state.context.error,
-    modal: state.context.modal,
+    isLoading,
+    error,
+    modal,
     openModal,
     closeModal,
     activePatient,

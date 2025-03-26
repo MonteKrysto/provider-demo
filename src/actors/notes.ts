@@ -23,6 +23,7 @@ export const notesMachine = createMachine({
             assign({
               currentNote: ({ event }) => {
                 const saveEvent = event as Extract<PracticeEvent, { type: 'SAVE_DRAFT' }>;
+                console.log('SAVE_DRAFT in notesMachine:', saveEvent);
                 return {
                   id: crypto.randomUUID(),
                   patientId: saveEvent.activePatient?.id ?? '',
@@ -41,6 +42,7 @@ export const notesMachine = createMachine({
             assign({
               notes: ({ context, event }) => {
                 const lockEvent = event as Extract<PracticeEvent, { type: 'LOCK_NOTE' }>;
+                console.log('LOCK_NOTE in notesMachine:', lockEvent);
                 const patientId = lockEvent.activePatient?.id ?? '';
                 return {
                   ...context.notes,

@@ -1,4 +1,4 @@
-import { PracticeDashboard } from './components/PracticeDashboard';
+import { PracticeDashboard } from './components/PracticeDashboard/PracticeDashboard';
 import { PracticeProvider, PatientProvider, NotesProvider, BillingProvider, AppointmentsProvider } from './contexts';
 
 function App() {

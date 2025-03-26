@@ -2,11 +2,17 @@ const { pgTable, text, json, decimal, timestamp, integer } = require('drizzle-or
 const { relations } = require('drizzle-orm');
 
 // Patients Table
+// const patients = pgTable('patients', {
+//   id: text('id').primaryKey(),
+//   name: text('name').notNull(),
+//   diagnosis: json('diagnosis').default('[]'),
+//   medications: json('medications').default('[]'),
+// });
 const patients = pgTable('patients', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  diagnosis: json('diagnosis').default('[]'),
-  medications: json('medications').default('[]'),
+  id: text('id', { length: 255 }).primaryKey(),
+  name: text('name', { length: 255 }).notNull(),
+  diagnosis: text('diagnosis').array().notNull().default('{}'), // Ensure default is an empty array
+  medications: text('medications').array().notNull().default('{}'),
 });
 
 // Notes Table
