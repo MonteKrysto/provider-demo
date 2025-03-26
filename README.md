@@ -1,4 +1,4 @@
-** Setup
+## Setup
 
 Make sure you have docker installed and running
 Change into the `server` directory - `cd server`
